@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.nnnoel/ytranscript-mcp",
+  "description": "YouTube transcripts for AI tools. Works from any cloud without proxies and transcribes videos without captions.",
+  "repository": { "url": "https://github.com/nnnoel/ytranscript-mcp", "source": "github" },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "ytranscript-mcp",
+      "version": "0.1.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        { "name": "YTRANSCRIPT_API_KEY", "description": "API key from https://ytranscript.com/developers (free plan available)", "isRequired": true, "isSecret": true }
+      ]
+    }
+  ]
+}
