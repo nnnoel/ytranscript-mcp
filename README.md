@@ -1,5 +1,7 @@
 # ytranscript-mcp
 
+[![npm](https://img.shields.io/npm/v/ytranscript-mcp)](https://www.npmjs.com/package/ytranscript-mcp) [![ytranscript-mcp MCP server](https://glama.ai/mcp/servers/nnnoel/ytranscript-mcp/badges/score.svg)](https://glama.ai/mcp/servers/nnnoel/ytranscript-mcp)
+
 An MCP server that gives Claude, Cursor, VS Code, and other AI tools the transcript of any YouTube video.
 
 - **Works from anywhere.** Runs fine on AWS, Lambda, Vercel, n8n Cloud, and other cloud hosts. There are no proxies to buy and no IP bans to work around. YouTube blocks most cloud IPs for transcript requests; the [yTranscript API](https://ytranscript.com/developers) handles that for you.
@@ -96,11 +98,12 @@ A transcript from captions costs **1 unit**. A video without captions, transcrib
 | Developer | $29/mo | 10,000 |
 | Scale | $79/mo | 50,000 |
 
-See [ytranscript.com/developers](https://ytranscript.com/developers) for details.
+Need more in a given month? Pay-as-you-go packs add 1,000 units for $10, 5,000 for $40 or 20,000 for $120, on top of any plan. See [ytranscript.com/developers](https://ytranscript.com/developers) for details.
 
 ## Related
 
 - [`ytranscript-api`](https://www.npmjs.com/package/ytranscript-api) is the JavaScript/TypeScript client this server is built on.
+- [YouTube Transcript Scraper on Apify](https://apify.com/ytranscript/youtube-transcript) runs the same transcripts in bulk, with pay-per-result pricing and no yTranscript account needed.
 
 ## License
 
