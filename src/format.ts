@@ -7,7 +7,8 @@ import { YTranscriptError } from "ytranscript-api";
 
 export type TranscriptFormat = "text" | "timestamped";
 
-export const KEY_URL = "https://ytranscript.com/developers";
+// Tagged so visits that start from a message inside an AI client (which sends no referrer) can be told apart.
+export const KEY_URL = "https://ytranscript.com/developers?utm_source=mcp-server";
 
 /** 61_000 -> "1:01", 3_661_000 -> "1:01:01" */
 export function formatTimestamp(ms: number): string {
@@ -65,7 +66,7 @@ export function explainError(err: unknown): string {
       case "unauthorized":
         return `The yTranscript API key is missing or invalid. Get a free key at ${KEY_URL} and set it as YTRANSCRIPT_API_KEY in this MCP server's configuration.`;
       case "quota_exceeded":
-        return `The monthly yTranscript quota is used up. It resets on the 1st (UTC), or upgrade at ${KEY_URL}. ${err.message}`;
+        return `The monthly yTranscript quota is used up. It resets on the 1st (UTC). To get more units now, go to ${KEY_URL} and upgrade or buy a pack. ${err.message}`;
       case "rate_limited":
         return `Too many requests per minute for this yTranscript plan. Wait a minute and try again. ${err.message}`;
       case "no_transcript":

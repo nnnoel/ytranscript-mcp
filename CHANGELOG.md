@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Links to the developer page in tool messages and the README carry a source tag.
+- The quota message now mentions pay-as-you-go packs.
+
 ## 0.1.0
 
 - First release: the `get_transcript` tool accepts a URL or video ID, an optional `lang`, `text` or `timestamped` format, and `max_characters`.

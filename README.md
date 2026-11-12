@@ -4,14 +4,14 @@
 
 An MCP server that gives Claude, Cursor, VS Code, and other AI tools the transcript of any YouTube video.
 
-- **Works from anywhere.** Runs fine on AWS, Lambda, Vercel, n8n Cloud, and other cloud hosts. There are no proxies to buy and no IP bans to work around. YouTube blocks most cloud IPs for transcript requests; the [yTranscript API](https://ytranscript.com/developers) handles that for you.
+- **Works from anywhere.** Runs fine on AWS, Lambda, Vercel, n8n Cloud, and other cloud hosts. There are no proxies to buy and no IP bans to work around. YouTube blocks most cloud IPs for transcript requests; the [yTranscript API](https://ytranscript.com/developers?utm_source=mcp-readme) handles that for you.
 - **Handles videos without captions.** If a video has no captions, it's transcribed with AI speech-to-text.
 - **Returns the language actually spoken** by default, including on auto-dubbed videos. Pass `lang` to pick a specific caption track.
 - **Keeps long videos manageable.** Choose plain text or timestamped lines, and cap the length so a two-hour video doesn't flood the model's context.
 
 ## Setup
 
-1. Get a free API key at **[ytranscript.com/developers](https://ytranscript.com/developers)**. The free plan includes 50 units a month, no card required.
+1. Get a free API key at **[ytranscript.com/developers](https://ytranscript.com/developers?utm_source=mcp-readme)**. The free plan includes 50 units a month, no card required.
 2. Add the server to your client using one of the configs below.
 
 ### Claude Code
@@ -98,7 +98,7 @@ A transcript from captions costs **1 unit**. A video without captions, transcrib
 | Developer | $29/mo | 10,000 |
 | Scale | $79/mo | 50,000 |
 
-Need more in a given month? Pay-as-you-go packs add 1,000 units for $10, 5,000 for $40 or 20,000 for $120, on top of any plan. See [ytranscript.com/developers](https://ytranscript.com/developers) for details.
+Need more in a given month? Pay-as-you-go packs add 1,000 units for $10, 5,000 for $40 or 20,000 for $120, on top of any plan. See [ytranscript.com/developers](https://ytranscript.com/developers?utm_source=mcp-readme) for details.
 
 ## Related
 
