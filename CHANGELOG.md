@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
 
 - Links to the developer page in tool messages and the README carry a source tag.
 - The quota message now mentions pay-as-you-go packs.
