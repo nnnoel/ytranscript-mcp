@@ -148,7 +148,7 @@ describe("explainError", () => {
     expect(e("bad_request")).toContain("11-character video ID");
     expect(e("network_error")).toContain("Couldn't reach");
     expect(e("fetch_failed")).toContain("Try again");
-    expect(e("not_found")).toContain("doesn't exist");
+    expect(e("not_found")).toBe("This video doesn't exist, or it is private or has been removed. Nothing was charged.");
     expect(e("temporarily_unavailable")).toContain("Try again in a few minutes");
     expect(explainError(new YTranscriptError("temporarily_unavailable", 503, "detail", 45))).toContain("in about 45 seconds");
   });

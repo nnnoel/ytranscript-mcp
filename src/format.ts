@@ -110,7 +110,7 @@ export function explainError(err: unknown): string {
       case "rate_limited":
         return `Too many requests per minute for this yTranscript plan. Wait a minute and try again. ${err.message}`;
       case "not_found":
-        return `This video doesn't exist, or it is private or has been removed. ${err.message}`;
+        return "This video doesn't exist, or it is private or has been removed. Nothing was charged.";
       case "temporarily_unavailable": {
         const wait = err.retryAfterSeconds ? `in about ${err.retryAfterSeconds} seconds` : "in a few minutes";
         return `YouTube is temporarily blocking yTranscript's servers, so this video can't be fetched right now. Nothing was charged. Try again ${wait}. ${err.message}`;
