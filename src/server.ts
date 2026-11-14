@@ -3,7 +3,7 @@ import { z } from "zod";
 import { YTranscript, type Transcript, type Video, type QuotaInfo } from "ytranscript-api";
 import { renderTranscript, renderVideoInfo, explainError, KEY_URL } from "./format.js";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.2.1";
 
 /** The methods the server needs from the SDK client; injectable for tests. */
 export interface TranscriptClient {
