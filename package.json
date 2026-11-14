@@ -3,13 +3,21 @@
   "version": "0.2.0",
   "description": "MCP server for YouTube transcripts and video details. Works from any cloud, no proxies. Transcribes videos without captions. Built on the yTranscript API.",
   "type": "module",
-  "bin": { "ytranscript-mcp": "dist/index.js" },
+  "bin": {
+    "ytranscript-mcp": "dist/index.js"
+  },
   "main": "./dist/index.js",
-  "files": ["dist", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "preversion": "node scripts/version.mjs changelog",
+    "version": "node scripts/version.mjs sync && git add server.json src/server.ts",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
@@ -23,12 +31,32 @@
     "typescript": "^5.4.0",
     "vitest": "^4.1.10"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "license": "MIT",
   "author": "nnnoel",
   "homepage": "https://ytranscript.com/developers",
-  "repository": { "type": "git", "url": "git+https://github.com/nnnoel/ytranscript-mcp.git" },
-  "bugs": { "url": "https://github.com/nnnoel/ytranscript-mcp/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nnnoel/ytranscript-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nnnoel/ytranscript-mcp/issues"
+  },
   "mcpName": "io.github.nnnoel/ytranscript-mcp",
-  "keywords": ["mcp", "mcp-server", "model-context-protocol", "claude", "cursor", "youtube", "youtube transcript", "youtube metadata", "transcript", "captions", "subtitles", "whisper"]
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "claude",
+    "cursor",
+    "youtube",
+    "youtube transcript",
+    "youtube metadata",
+    "transcript",
+    "captions",
+    "subtitles",
+    "whisper"
+  ]
 }

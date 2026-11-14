@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- The message for a missing, private or removed video no longer says the same thing twice, and now says that nothing was charged.
+- Releases are now published from GitHub Actions, so each version on npm carries a provenance statement linking it to the commit it was built from.
+
 ## 0.2.0
 
 - New tool `get_video_info`: title, description, channel, publish date, duration, views, likes, tags, category and chapters for 1 unit.
