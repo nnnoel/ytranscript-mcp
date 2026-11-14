@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
   "name": "io.github.nnnoel/ytranscript-mcp",
-  "description": "YouTube transcripts for AI tools. No proxies needed; transcribes videos without captions.",
+  "description": "YouTube transcripts and video details for AI tools. No proxies; transcribes captionless videos.",
   "repository": {
     "url": "https://github.com/nnnoel/ytranscript-mcp",
     "source": "github"
   },
-  "version": "0.1.1",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "ytranscript-mcp",
-      "version": "0.1.1",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       },

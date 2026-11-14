@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { YTranscriptError, type Transcript } from "ytranscript-api";
-import { formatTimestamp, renderTranscript, renderQuota, explainError } from "../src/format.js";
+import { YTranscriptError, type Transcript, type Video } from "ytranscript-api";
+import { formatTimestamp, renderTranscript, renderVideoInfo, renderQuota, explainError } from "../src/format.js";
 
 const t: Transcript = {
   videoId: "dQw4w9WgXcQ",
@@ -61,6 +61,75 @@ describe("renderTranscript", () => {
   });
 });
 
+const v: Video = {
+  videoId: "dQw4w9WgXcQ",
+  title: "Never Gonna Give You Up",
+  description: "The official video.",
+  durationSeconds: 213,
+  viewCount: 1700000000,
+  likeCount: 18000000,
+  publishedAt: "2009-10-24T23:57:33-07:00",
+  channel: { id: "UC1", name: "Rick Astley", handle: "@RickAstleyYT", url: "https://www.youtube.com/@RickAstleyYT", subscriberCount: 4560000 },
+  tags: ["rick astley", "pop"],
+  category: "Music",
+  chapters: [{ title: "Verse", startSeconds: 19 }, { title: "Chorus", startSeconds: 43 }],
+  thumbnails: [],
+  isLive: false,
+  cached: false,
+  unitsCharged: 1,
+};
+
+describe("renderVideoInfo", () => {
+  it("lists the facts, chapters, description and quota", () => {
+    const out = renderVideoInfo(v, { limit: 1000, used: 42, rateLimitRemaining: 29 });
+    expect(out).toContain("Video https://youtu.be/dQw4w9WgXcQ\nTitle: Never Gonna Give You Up");
+    expect(out).toContain("Channel: Rick Astley (@RickAstleyYT, about 4,560,000 subscribers)");
+    expect(out).toContain("Published: 2009-10-24");
+    expect(out).toContain("Duration: 3:33");
+    expect(out).toContain("Views: 1,700,000,000");
+    expect(out).toContain("Likes: 18,000,000");
+    expect(out).toContain("Category: Music");
+    expect(out).toContain("Tags: rick astley, pop");
+    expect(out).toContain("Chapters:\n[0:19] Verse\n[0:43] Chorus");
+    expect(out).toContain("Description:\nThe official video.");
+    expect(out).toContain("this request used 1 unit; 42 of 1,000 units");
+    expect(out).not.toContain("YouTube limited");
+    expect(out).not.toContain("Live:");
+  });
+
+  it("leaves out unknown facts and says so when YouTube served the reduced page", () => {
+    const out = renderVideoInfo({
+      ...v,
+      description: null,
+      durationSeconds: null,
+      likeCount: null,
+      tags: null,
+      category: null,
+      chapters: [],
+      channel: { id: null, name: null, handle: null, url: null, subscriberCount: null },
+    });
+    expect(out).toContain("Views: 1,700,000,000");
+    for (const label of ["Duration:", "Likes:", "Category:", "Tags:", "Channel", "Chapters:", "Description:", "null"]) {
+      expect(out).not.toContain(label);
+    }
+    expect(out).toContain("YouTube limited what it showed");
+  });
+
+  it("does not call a video limited just because it has no tags", () => {
+    expect(renderVideoInfo({ ...v, tags: [] })).not.toContain("YouTube limited");
+  });
+});
+
+describe("renderTranscript with video info", () => {
+  it("puts the video facts under the header, and nothing when metadata is null", () => {
+    const { cached: _c, unitsCharged: _u, ...metadata } = v;
+    const out = renderTranscript({ ...t, metadata });
+    expect(out).toContain("source: YouTube captions)\nTitle: Never Gonna Give You Up\nChannel: Rick Astley");
+    expect(out).toContain("Duration: 3:33");
+    expect(renderTranscript({ ...t, metadata: null })).not.toContain("Title:");
+  });
+});
+
 describe("renderQuota", () => {
   it("is empty without quota info and pluralizes units", () => {
     expect(renderQuota({ unitsCharged: 1 }, null)).toBe("");
@@ -79,6 +148,9 @@ describe("explainError", () => {
     expect(e("bad_request")).toContain("11-character video ID");
     expect(e("network_error")).toContain("Couldn't reach");
     expect(e("fetch_failed")).toContain("Try again");
+    expect(e("not_found")).toContain("doesn't exist");
+    expect(e("temporarily_unavailable")).toContain("Try again in a few minutes");
+    expect(explainError(new YTranscriptError("temporarily_unavailable", 503, "detail", 45))).toContain("in about 45 seconds");
   });
 
   it("handles non-API errors", () => {

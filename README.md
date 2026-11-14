@@ -2,11 +2,12 @@
 
 [![npm](https://img.shields.io/npm/v/ytranscript-mcp)](https://www.npmjs.com/package/ytranscript-mcp) [![ytranscript-mcp MCP server](https://glama.ai/mcp/servers/nnnoel/ytranscript-mcp/badges/score.svg)](https://glama.ai/mcp/servers/nnnoel/ytranscript-mcp)
 
-An MCP server that gives Claude, Cursor, VS Code, and other AI tools the transcript of any YouTube video.
+An MCP server that gives Claude, Cursor, VS Code, and other AI tools the transcript of any YouTube video, plus its details: title, channel, duration, views and chapters.
 
 - **Works from anywhere.** Runs fine on AWS, Lambda, Vercel, n8n Cloud, and other cloud hosts. There are no proxies to buy and no IP bans to work around. YouTube blocks most cloud IPs for transcript requests; the [yTranscript API](https://ytranscript.com/developers?utm_source=mcp-readme) handles that for you.
 - **Handles videos without captions.** If a video has no captions, it's transcribed with AI speech-to-text.
 - **Returns the language actually spoken** by default, including on auto-dubbed videos. Pass `lang` to pick a specific caption track.
+- **Knows what the video is.** Get the title, channel, publish date, duration, views, tags and chapters, on their own or together with the transcript.
 - **Keeps long videos manageable.** Choose plain text or timestamped lines, and cap the length so a two-hour video doesn't flood the model's context.
 
 ## Setup
@@ -78,6 +79,7 @@ Any other MCP client that runs stdio servers works the same way: run `npx -y ytr
 | `lang` | no | Language code of the caption track to fetch, such as `en` or `es`. Omit it to get the video's original language |
 | `format` | no | `text` (default) returns plain text. `timestamped` returns one line per segment with `[m:ss]` times |
 | `max_characters` | no | Cut the transcript at about this many characters. The response says how much was left out |
+| `include_video_info` | no | `true` adds the title, channel, publish date, duration and view count above the transcript, at no extra cost |
 
 Things to ask your assistant:
 
@@ -85,11 +87,27 @@ Things to ask your assistant:
 - "What does the speaker say about pricing, and at what timestamps?"
 - "Pull the transcript of this Spanish video and translate it to English."
 
+## Tool: `get_video_info`
+
+Returns a video's details without its transcript: title, description, channel (name, handle, subscribers), publish date, duration, view and like counts, tags, category and chapters.
+
+| Argument | Required | Description |
+|---|---|---|
+| `video` | yes | A YouTube URL or an 11-character video ID |
+
+Things to ask your assistant:
+
+- "How long is this video, and who made it?"
+- "List the chapters of https://youtu.be/..."
+- "Is this video worth transcribing? Check the description first."
+
+When YouTube limits what it shows for a video, the duration, tags and category can be missing. The response says so.
+
 Every response ends with the units used and your monthly total, so you can keep an eye on your quota.
 
 ## Pricing
 
-A transcript from captions costs **1 unit**. A video without captions, transcribed with AI, costs **15 units**. Failed requests are free.
+A transcript from captions costs **1 unit**. A video without captions, transcribed with AI, costs **15 units**. Video info costs **1 unit**, and nothing when it comes with a transcript. Failed requests are free.
 
 | Plan | Price | Units per month |
 |---|---|---|

@@ -1,13 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { YTranscript, type Transcript, type QuotaInfo } from "ytranscript-api";
-import { renderTranscript, explainError, KEY_URL } from "./format.js";
+import { YTranscript, type Transcript, type Video, type QuotaInfo } from "ytranscript-api";
+import { renderTranscript, renderVideoInfo, explainError, KEY_URL } from "./format.js";
 
-export const VERSION = "0.1.1";
+export const VERSION = "0.2.0";
 
-/** The one method the server needs from the SDK client; injectable for tests. */
+/** The methods the server needs from the SDK client; injectable for tests. */
 export interface TranscriptClient {
-  transcript(video: string, opts: { lang?: string }): Promise<Transcript>;
+  transcript(video: string, opts: { lang?: string; metadata?: boolean }): Promise<Transcript>;
+  video(video: string): Promise<Video>;
   lastQuota: QuotaInfo | null;
 }
 
@@ -36,7 +37,8 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         "Get the transcript of a YouTube video. Accepts a video URL (watch, youtu.be, shorts, embed) " +
         "or an 11-character video ID. Returns the video's spoken language by default. Videos without " +
         "captions are transcribed with AI speech-to-text. Use format=timestamped when you need to cite " +
-        "or jump to specific moments.",
+        "or jump to specific moments. Set include_video_info=true to also get the title, channel, " +
+        "publish date, duration and view count at no extra cost.",
       inputSchema: {
         video: z.string().min(1).describe("YouTube video URL or 11-character video ID"),
         lang: z
@@ -53,18 +55,51 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           .positive()
           .optional()
           .describe("Truncate the transcript to about this many characters. Useful for very long videos."),
+        include_video_info: z
+          .boolean()
+          .optional()
+          .describe("Also return the video's title, channel, publish date, duration and view count above the transcript. Free."),
       },
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async ({ video, lang, format, max_characters }) => {
+    async ({ video, lang, format, max_characters, include_video_info }) => {
       try {
         const c = getClient();
-        const t = await c.transcript(video.trim(), lang ? { lang } : {});
+        const t = await c.transcript(video.trim(), {
+          ...(lang ? { lang } : {}),
+          ...(include_video_info ? { metadata: true } : {}),
+        });
         return {
           content: [
             { type: "text", text: renderTranscript(t, { format, maxCharacters: max_characters, quota: c.lastQuota }) },
           ],
         };
+      } catch (err) {
+        return { isError: true, content: [{ type: "text", text: explainError(err) }] };
+      }
+    },
+  );
+
+  server.registerTool(
+    "get_video_info",
+    {
+      title: "Get YouTube video info",
+      description:
+        "Get details about a YouTube video without its transcript: title, description, channel, " +
+        "publish date, duration, view and like counts, tags, category and chapters. Accepts a video " +
+        "URL or an 11-character video ID. Use it to check what a video is, or how long it is, before " +
+        "fetching the transcript. If you need the transcript too, call get_transcript with " +
+        "include_video_info=true instead.",
+      inputSchema: {
+        video: z.string().min(1).describe("YouTube video URL or 11-character video ID"),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ video }) => {
+      try {
+        const c = getClient();
+        const v = await c.video(video.trim());
+        return { content: [{ type: "text", text: renderVideoInfo(v, c.lastQuota) }] };
       } catch (err) {
         return { isError: true, content: [{ type: "text", text: explainError(err) }] };
       }
