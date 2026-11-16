@@ -80,6 +80,7 @@ Any other MCP client that runs stdio servers works the same way: run `npx -y ytr
 | `format` | no | `text` (default) returns plain text. `timestamped` returns one line per segment with `[m:ss]` times |
 | `max_characters` | no | Cut the transcript at about this many characters. The response says how much was left out |
 | `include_video_info` | no | `true` adds the title, channel, publish date, duration and view count above the transcript, at no extra cost |
+| `max_units` | no | The most the request may cost. A video without captions that would cost more isn't transcribed or charged, and the response gives the estimate. `1` means captions only |
 
 Things to ask your assistant:
 
@@ -107,7 +108,7 @@ Every response ends with the units used and your monthly total, so you can keep 
 
 ## Pricing
 
-A transcript from captions costs **1 unit**. A video without captions, transcribed with AI, costs **15 units**. Video info costs **1 unit**, and nothing when it comes with a transcript. Failed requests are free.
+A transcript from captions costs **1 unit**. A video without captions is transcribed with AI for **1 unit per minute of audio**, at least 5 (a 9-minute video costs 9). Use `max_units` to cap what a request may cost. Video info costs **1 unit**, and nothing when it comes with a transcript. Failed requests are free.
 
 | Plan | Price | Units per month |
 |---|---|---|

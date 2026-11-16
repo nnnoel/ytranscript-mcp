@@ -7,7 +7,7 @@ export const VERSION = "0.2.1";
 
 /** The methods the server needs from the SDK client; injectable for tests. */
 export interface TranscriptClient {
-  transcript(video: string, opts: { lang?: string; metadata?: boolean }): Promise<Transcript>;
+  transcript(video: string, opts: { lang?: string; metadata?: boolean; maxUnits?: number }): Promise<Transcript>;
   video(video: string): Promise<Video>;
   lastQuota: QuotaInfo | null;
 }
@@ -59,15 +59,26 @@ export function createServer(opts: ServerOptions = {}): McpServer {
           .boolean()
           .optional()
           .describe("Also return the video's title, channel, publish date, duration and view count above the transcript. Free."),
+        max_units: z
+          .number()
+          .int()
+          .positive()
+          .optional()
+          .describe(
+            "The most this request may cost, in units. A video without captions needs AI transcription, " +
+              "which costs 1 unit per minute of audio (at least 5); if that would exceed max_units, nothing is " +
+              "transcribed or charged and the error gives the estimate. 1 means captions only.",
+          ),
       },
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
-    async ({ video, lang, format, max_characters, include_video_info }) => {
+    async ({ video, lang, format, max_characters, include_video_info, max_units }) => {
       try {
         const c = getClient();
         const t = await c.transcript(video.trim(), {
           ...(lang ? { lang } : {}),
           ...(include_video_info ? { metadata: true } : {}),
+          ...(max_units !== undefined ? { maxUnits: max_units } : {}),
         });
         return {
           content: [

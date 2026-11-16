@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- New `max_units` argument on `get_transcript`: the most a request may cost. A video without captions whose AI transcription would cost more isn't transcribed or charged, and the error gives the estimate. `max_units: 1` means captions only.
+- AI transcription of videos without captions now costs 1 unit per minute of audio (at least 5) instead of a flat 15. The README's pricing section says so.
+- Requires `ytranscript-api` 0.3.0.
+
 ## 0.2.1
 
 - The message for a missing, private or removed video no longer says the same thing twice, and now says that nothing was charged.

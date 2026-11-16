@@ -72,7 +72,7 @@ describe("MCP server", () => {
     const { tools } = await client.listTools();
     expect(tools.map((x) => x.name)).toEqual(["get_transcript", "get_video_info"]);
     const props = (i: number) => Object.keys((tools[i].inputSchema as { properties: object }).properties);
-    expect(props(0)).toEqual(expect.arrayContaining(["video", "lang", "format", "max_characters", "include_video_info"]));
+    expect(props(0)).toEqual(expect.arrayContaining(["video", "lang", "format", "max_characters", "include_video_info", "max_units"]));
     expect(props(1)).toEqual(["video"]);
     for (const tool of tools) expect(tool.annotations?.readOnlyHint).toBe(true);
   });
@@ -126,6 +126,26 @@ describe("MCP server", () => {
     const client = await connect({ client: fake });
     await client.callTool({ name: "get_transcript", arguments: { video: "abcdefghijk" } });
     expect(fake.calls[0]).toEqual(["abcdefghijk", {}]);
+  });
+
+  it("passes max_units through as maxUnits and explains a refusal", async () => {
+    const fake = fakeClient(async () => {
+      throw new YTranscriptError("max_units_exceeded", 422, "It would cost about 9 units.", undefined, 9);
+    });
+    const client = await connect({ client: fake });
+    const r = await client.callTool({ name: "get_transcript", arguments: { video: "abcdefghijk", max_units: 5 } });
+    expect(fake.calls[0]).toEqual(["abcdefghijk", { maxUnits: 5 }]);
+    expect(r.isError).toBe(true);
+    expect(text(r)).toContain("Nothing was transcribed or charged");
+    expect(text(r)).toContain("about 9 units");
+  });
+
+  it("rejects a max_units that isn't a positive whole number", async () => {
+    const fake = fakeClient(async () => sample);
+    const client = await connect({ client: fake });
+    const r = await client.callTool({ name: "get_transcript", arguments: { video: "abcdefghijk", max_units: 0 } });
+    expect(r.isError).toBe(true);
+    expect(fake.calls).toHaveLength(0);
   });
 
   it("turns API errors into an isError result with guidance, not a protocol failure", async () => {

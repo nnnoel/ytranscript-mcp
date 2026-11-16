@@ -115,6 +115,8 @@ export function explainError(err: unknown): string {
         const wait = err.retryAfterSeconds ? `in about ${err.retryAfterSeconds} seconds` : "in a few minutes";
         return `YouTube is temporarily blocking yTranscript's servers, so this video can't be fetched right now. Nothing was charged. Try again ${wait}. ${err.message}`;
       }
+      case "max_units_exceeded":
+        return `This video has no captions, so it needs AI transcription, which would cost more than the max_units set for this request. Nothing was transcribed or charged. To transcribe it, call again with a higher max_units or without it. ${err.message}`;
       case "no_transcript":
         return `No transcript is available for this video. It may be private, age-restricted, removed, or have no speech. ${err.message}`;
       case "bad_request":
