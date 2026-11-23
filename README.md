@@ -76,7 +76,7 @@ Any other MCP client that runs stdio servers works the same way: run `npx -y ytr
 | Argument | Required | Description |
 |---|---|---|
 | `video` | yes | A YouTube URL (`watch`, `youtu.be`, `shorts`, `embed`) or an 11-character video ID |
-| `lang` | no | Preferred language code, such as `en` or `es`. Omit it to get the video's original language. A video with no transcript in that language returns its original language |
+| `lang` | no | Preferred language code, such as `en` or `es`. Omit it to get the video's original language. A video with no captions in that language is transcribed with AI in the language actually spoken |
 | `format` | no | `text` (default) returns plain text. `timestamped` returns one line per segment with `[m:ss]` times |
 | `max_characters` | no | Cut the transcript at about this many characters. The response says how much was left out |
 | `include_video_info` | no | `true` adds the title, channel, publish date, duration and view count above the transcript, at no extra cost |

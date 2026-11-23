@@ -32,6 +32,7 @@ export function renderTranscript(t: Transcript, opts: RenderOptions = {}): strin
   const source = t.whisper ? "AI speech-to-text (the video has no captions)" : "YouTube captions";
   const header =
     `Transcript of https://youtu.be/${t.videoId} (language: ${t.lang}, source: ${source})` +
+    (t.notice ? `\nNote: ${t.notice}` : "") +
     (t.metadata ? `\n${renderVideoFacts(t.metadata).join("\n")}` : "");
 
   const fullBody =
