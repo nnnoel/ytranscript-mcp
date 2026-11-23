@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- `get_transcript` with a `lang` the video has no captions in now gets an AI transcription in the language actually spoken, instead of an error. If AI transcription can't run (for example `max_units` is too low), it returns the video's default captions with a "Note:" line saying why.
+- Requires `ytranscript-api` 0.4.0.
+
 ## 0.3.0
 
 - New `max_units` argument on `get_transcript`: the most a request may cost. A video without captions whose AI transcription would cost more isn't transcribed or charged, and the error gives the estimate. `max_units: 1` means captions only.

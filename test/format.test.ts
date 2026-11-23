@@ -44,6 +44,12 @@ describe("renderTranscript", () => {
     expect(renderTranscript({ ...t, whisper: true })).toContain("AI speech-to-text");
   });
 
+  it("passes on the notice when the transcript isn't in the requested language", () => {
+    const notice = "This video has no English captions, so an English transcript needs AI transcription. AI transcription costs at least 5 units, more than max_units=1. Here are the video's German captions instead.";
+    expect(renderTranscript({ ...t, lang: "de", notice })).toContain(`\nNote: ${notice}`);
+    expect(renderTranscript(t)).not.toContain("Note:");
+  });
+
   it("truncates on a word boundary and says how much was cut", () => {
     const out = renderTranscript(t, { maxCharacters: 20 });
     expect(out).toContain("hello there general");
