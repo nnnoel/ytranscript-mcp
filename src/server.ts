@@ -44,7 +44,7 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         lang: z
           .string()
           .optional()
-          .describe("Language code of the caption track to fetch, e.g. 'en' or 'es'. Omit to get the video's original language."),
+          .describe("Preferred language code, e.g. 'en' or 'es'. Omit to get the video's original language. A video with no transcript in that language returns its original language (see lang in the result)."),
         format: z
           .enum(["text", "timestamped"])
           .optional()
