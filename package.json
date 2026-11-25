@@ -1,6 +1,6 @@
 {
   "name": "ytranscript-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "MCP server for YouTube transcripts, video details and channel or playlist video lists. Works from any cloud, no proxies. Transcribes videos without captions. Built on the yTranscript API.",
   "type": "module",
   "bin": {
