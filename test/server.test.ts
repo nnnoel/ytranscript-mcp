@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { YTranscriptError, type Transcript, type Video } from "ytranscript-api";
+import { YTranscriptError, type Transcript, type Video, type VideoList, type VideosOptions } from "ytranscript-api";
 import { createServer, type TranscriptClient } from "../src/server.js";
 
 const sample: Transcript = {
@@ -32,6 +32,19 @@ const video: Video = {
   unitsCharged: 1,
 };
 
+const list: VideoList = {
+  type: "channel",
+  channelId: "UC1234567890123456789012",
+  playlistId: "UU1234567890123456789012",
+  title: "Uploads from Test Channel",
+  videos: [
+    { videoId: "abcdefghijk", title: "Newest talk", publishedAt: "2026-11-19T03:15:09.000Z", publishedAtExact: true, publishedText: "6 days ago", durationSeconds: 3725, viewCount: 1234, },
+    { videoId: "bcdefghijkl", title: "Older talk", publishedAt: "2025-06-01", publishedAtExact: false, publishedText: "1 year ago", durationSeconds: 59, viewCount: null },
+  ],
+  nextCursor: "CURSOR123",
+  unitsCharged: 1,
+};
+
 /** Connect a real MCP client to the server over an in-memory transport. */
 async function connect(opts: Parameters<typeof createServer>[0]) {
   const server = createServer(opts);
@@ -45,12 +58,19 @@ async function connect(opts: Parameters<typeof createServer>[0]) {
 function fakeClient(
   impl: TranscriptClient["transcript"],
   videoImpl: TranscriptClient["video"] = async () => video,
-): TranscriptClient & { calls: unknown[][]; videoCalls: string[] } {
+  videosImpl: TranscriptClient["videos"] = async () => list,
+): TranscriptClient & { calls: unknown[][]; videoCalls: string[]; listCalls: VideosOptions[] } {
   const calls: unknown[][] = [];
   const videoCalls: string[] = [];
+  const listCalls: VideosOptions[] = [];
   return {
     calls,
     videoCalls,
+    listCalls,
+    videos: (o) => {
+      listCalls.push(o);
+      return videosImpl(o);
+    },
     video: (v) => {
       videoCalls.push(v);
       return videoImpl(v);
@@ -67,10 +87,13 @@ const text = (r: Awaited<ReturnType<Client["callTool"]>>) =>
   (r.content as { type: string; text: string }[])[0].text;
 
 describe("MCP server", () => {
-  it("lists both tools with their input schemas, even without an API key", async () => {
+  it("lists the tools with their input schemas, even without an API key", async () => {
     const client = await connect({});
     const { tools } = await client.listTools();
-    expect(tools.map((x) => x.name)).toEqual(["get_transcript", "get_video_info"]);
+    expect(tools.map((x) => x.name)).toEqual(["get_transcript", "get_video_info", "list_videos"]);
+    expect(Object.keys((tools[2].inputSchema as { properties: object }).properties)).toEqual(
+      ["channel", "playlist", "content", "published_after", "limit", "cursor"],
+    );
     const props = (i: number) => Object.keys((tools[i].inputSchema as { properties: object }).properties);
     expect(props(0)).toEqual(expect.arrayContaining(["video", "lang", "format", "max_characters", "include_video_info", "max_units"]));
     expect(props(1)).toEqual(["video"]);
@@ -163,5 +186,55 @@ describe("MCP server", () => {
     const r = await client.callTool({ name: "get_transcript", arguments: { video: "abcdefghijk" } });
     expect(r.isError).toBe(true);
     expect(text(r)).toContain("YTRANSCRIPT_API_KEY");
+  });
+
+  it("list_videos lists a channel's videos and passes the options through", async () => {
+    const fake = fakeClient(async () => sample);
+    const client = await connect({ client: fake });
+    const r = await client.callTool({ name: "list_videos", arguments: { channel: " @testchannel ", content: "videos", published_after: "2025-01-01", limit: 2 } });
+    expect(r.isError).toBeFalsy();
+    expect(fake.listCalls).toEqual([{ channel: "@testchannel", content: "videos", publishedAfter: "2025-01-01", limit: 2 }]);
+    const t = text(r);
+    expect(t).toContain("Channel: https://www.youtube.com/channel/UC1234567890123456789012");
+    expect(t).toContain("2 videos, newest first");
+    expect(t).toContain("- https://youtu.be/abcdefghijk | 2026-11-19 | 1:02:05 | 1,234 views | Newest talk");
+    expect(t).toContain("- https://youtu.be/bcdefghijkl | about 2025-06-01 | 0:59 | Older talk");
+    expect(t).toContain('Dates marked "about" are estimated');
+    expect(t).toContain("cursor: CURSOR123");
+    expect(t).toContain("7 of 1,000 units");
+  });
+
+  it("list_videos with a cursor sends only the cursor and limit, and says when the list is done", async () => {
+    const fake = fakeClient(async () => sample, undefined, async () => ({ ...list, type: "playlist", channelId: null, videos: [list.videos[0]], nextCursor: null }));
+    const client = await connect({ client: fake });
+    const r = await client.callTool({ name: "list_videos", arguments: { cursor: "CURSOR123", channel: "@ignored", limit: 50 } });
+    expect(fake.listCalls).toEqual([{ cursor: "CURSOR123", limit: 50 }]);
+    expect(text(r)).toContain("Playlist: Uploads from Test Channel (UU1234567890123456789012)");
+    expect(text(r)).toContain("1 video, in playlist order");
+    expect(text(r)).toContain("That is all the videos.");
+    expect(text(r)).not.toContain("estimated");
+  });
+
+  it("list_videos needs exactly one of channel or playlist", async () => {
+    const fake = fakeClient(async () => sample);
+    const client = await connect({ client: fake });
+    for (const args of [{}, { channel: "@a", playlist: "PLx" }]) {
+      const r = await client.callTool({ name: "list_videos", arguments: args });
+      expect(r.isError).toBe(true);
+      expect(text(r)).toContain("either channel or playlist");
+    }
+    const bad = await client.callTool({ name: "list_videos", arguments: { channel: "@a", published_after: "Nov 1" } });
+    expect(bad.isError).toBe(true);
+    expect(fake.listCalls).toEqual([]);
+  });
+
+  it("list_videos explains a missing channel without talking about videos", async () => {
+    const fake = fakeClient(async () => sample, undefined, async () => {
+      throw new YTranscriptError("not_found", 404, "Channel not found.");
+    });
+    const client = await connect({ client: fake });
+    const r = await client.callTool({ name: "list_videos", arguments: { channel: "@nobody" } });
+    expect(r.isError).toBe(true);
+    expect(text(r)).toContain("This channel or playlist doesn't exist");
   });
 });

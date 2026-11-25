@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- New `list_videos` tool: a channel's videos (newest first) or a playlist's, with title, URL, publish date, length and views. Filter with `content` and `published_after`, page with `limit` and `cursor`. Costs 1 unit per started 100 videos.
+- Requires `ytranscript-api` 0.5.0.
+
 ## 0.4.0
 
 - `get_transcript` with a `lang` the video has no captions in now gets an AI transcription in the language actually spoken, instead of an error. If AI transcription can't run (for example `max_units` is too low), it returns the video's default captions with a "Note:" line saying why.

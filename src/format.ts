@@ -2,7 +2,7 @@
  * Pure formatting helpers: turn API results and errors into text an AI assistant can use.
  * No I/O here, so everything in this file is unit-tested.
  */
-import type { Transcript, VideoMetadata, QuotaInfo } from "ytranscript-api";
+import type { Transcript, VideoMetadata, VideoList, QuotaInfo } from "ytranscript-api";
 import { YTranscriptError } from "ytranscript-api";
 
 export type TranscriptFormat = "text" | "timestamped";
@@ -94,6 +94,34 @@ export function renderVideoInfo(v: VideoMetadata & { unitsCharged: number }, quo
   return `${parts.join("\n\n")}${renderQuota(v, quota)}`;
 }
 
+/** A channel's or playlist's videos for the list_videos tool: one line per video. */
+export function renderVideoList(list: VideoList, quota?: QuotaInfo | null): string {
+  // A channel's long-form list is titled just "Videos" on YouTube, so name a channel by its URL.
+  const source = list.type === "channel" && list.channelId
+    ? `Channel: https://www.youtube.com/channel/${list.channelId}`
+    : `Playlist: ${list.title ? `${list.title} (${list.playlistId})` : list.playlistId}`;
+  const header = `${source}\n${list.videos.length === 1 ? "1 video" : `${count(list.videos.length)} videos`}` +
+    (list.type === "channel" ? ", newest first" : ", in playlist order");
+  const lines = list.videos.map((v) => {
+    const date = v.publishedAt ? (v.publishedAtExact ? v.publishedAt.slice(0, 10) : `about ${v.publishedAt.slice(0, 10)}`) : null;
+    const facts = [
+      date,
+      v.durationSeconds != null ? formatTimestamp(v.durationSeconds * 1000) : null,
+      v.viewCount != null ? `${count(v.viewCount)} views` : null,
+    ].filter(Boolean);
+    // The title goes last: titles often contain " | " themselves.
+    return `- https://youtu.be/${v.videoId} | ${[...facts, v.title ?? "(untitled)"].join(" | ")}`;
+  });
+  const notes: string[] = [];
+  if (list.videos.some((v) => v.publishedAt && !v.publishedAtExact)) {
+    notes.push('Dates marked "about" are estimated from YouTube\'s "N weeks ago" text and may be a little later than the real date.');
+  }
+  if (list.nextCursor) notes.push(`More videos are available. To get them, call list_videos again with cursor: ${list.nextCursor}`);
+  else notes.push("That is all the videos.");
+  const body = lines.length ? lines.join("\n") : "No videos matched.";
+  return `${header}\n\n${body}\n\n${notes.join("\n")}${renderQuota(list, quota)}`;
+}
+
 export function renderQuota(t: Pick<Transcript, "unitsCharged">, quota?: QuotaInfo | null): string {
   if (!quota) return "";
   const units = t.unitsCharged === 1 ? "1 unit" : `${t.unitsCharged} units`;
@@ -101,7 +129,7 @@ export function renderQuota(t: Pick<Transcript, "unitsCharged">, quota?: QuotaIn
 }
 
 /** A clear, actionable message for every failure the API can return. */
-export function explainError(err: unknown): string {
+export function explainError(err: unknown, subject: "video" | "list" = "video"): string {
   if (err instanceof YTranscriptError) {
     switch (err.code) {
       case "unauthorized":
@@ -111,6 +139,7 @@ export function explainError(err: unknown): string {
       case "rate_limited":
         return `Too many requests per minute for this yTranscript plan. Wait a minute and try again. ${err.message}`;
       case "not_found":
+        if (subject === "list") return "This channel or playlist doesn't exist, or it is private. Check the handle, URL or ID. Nothing was charged.";
         return "This video doesn't exist, or it is private or has been removed. Nothing was charged.";
       case "temporarily_unavailable": {
         const wait = err.retryAfterSeconds ? `in about ${err.retryAfterSeconds} seconds` : "in a few minutes";
@@ -121,6 +150,7 @@ export function explainError(err: unknown): string {
       case "no_transcript":
         return `No transcript is available for this video. It may be private, age-restricted, removed, or have no speech. ${err.message}`;
       case "bad_request":
+        if (subject === "list") return `The request couldn't be read. ${err.message}`;
         return `That doesn't look like a YouTube video. Pass a video URL (youtube.com/watch?v=..., youtu.be/..., /shorts/...) or an 11-character video ID. ${err.message}`;
       case "network_error":
         return `Couldn't reach the yTranscript API. Check the network connection and try again. ${err.message}`;

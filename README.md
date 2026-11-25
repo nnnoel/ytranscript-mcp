@@ -2,12 +2,13 @@
 
 [![npm](https://img.shields.io/npm/v/ytranscript-mcp)](https://www.npmjs.com/package/ytranscript-mcp) [![ytranscript-mcp MCP server](https://glama.ai/mcp/servers/nnnoel/ytranscript-mcp/badges/score.svg)](https://glama.ai/mcp/servers/nnnoel/ytranscript-mcp)
 
-An MCP server that gives Claude, Cursor, VS Code, and other AI tools the transcript of any YouTube video, plus its details: title, channel, duration, views and chapters.
+An MCP server that gives Claude, Cursor, VS Code, and other AI tools the transcript of any YouTube video, plus its details (title, channel, duration, views and chapters) and the videos on any channel or playlist.
 
 - **Works from anywhere.** Runs fine on AWS, Lambda, Vercel, n8n Cloud, and other cloud hosts. There are no proxies to buy and no IP bans to work around. YouTube blocks most cloud IPs for transcript requests; the [yTranscript API](https://ytranscript.com/developers?utm_source=mcp-readme) handles that for you.
 - **Handles videos without captions.** If a video has no captions, it's transcribed with AI speech-to-text.
 - **Returns the language actually spoken** by default, including on auto-dubbed videos. Pass `lang` to pick a specific caption track.
 - **Knows what the video is.** Get the title, channel, publish date, duration, views, tags and chapters, on their own or together with the transcript.
+- **Lists a channel's or playlist's videos.** Get the newest uploads, or everything since a date, then pull the transcripts you need.
 - **Keeps long videos manageable.** Choose plain text or timestamped lines, and cap the length so a two-hour video doesn't flood the model's context.
 
 ## Setup
@@ -104,11 +105,32 @@ Things to ask your assistant:
 
 When YouTube limits what it shows for a video, the duration, tags and category can be missing. The response says so.
 
+## Tool: `list_videos`
+
+Lists the videos of a channel, newest first, or of a playlist, in playlist order: one line per video with its title, URL, publish date, length and views.
+
+| Argument | Required | Description |
+|---|---|---|
+| `channel` | one of these | An @handle, a channel URL or a channel ID (`UC...`) |
+| `playlist` | one of these | A playlist ID or a YouTube URL with `list=` |
+| `content` | no | Channels only. `all` (default) includes Shorts and live streams. `videos` returns regular videos only |
+| `published_after` | no | A date, `YYYY-MM-DD` (UTC): only videos published on or after it |
+| `limit` | no | How many videos to return, 1 to 500. Default 100 |
+| `cursor` | no | The cursor from a previous result, to get the next videos |
+
+The newest 15 videos have exact publish dates. Older ones are estimated from YouTube's "3 weeks ago" text and are marked "about". A date filter can let in a few videos from just before the date, but never leaves out one after it.
+
+Things to ask your assistant:
+
+- "What has @lexfridman posted this month? Summarize the latest episode."
+- "List every video in this playlist and transcribe the three shortest."
+- "Which of this channel's videos since June mention pricing?"
+
 Every response ends with the units used and your monthly total, so you can keep an eye on your quota.
 
 ## Pricing
 
-A transcript from captions costs **1 unit**. A video without captions is transcribed with AI for **1 unit per minute of audio**, at least 5 (a 9-minute video costs 9). Use `max_units` to cap what a request may cost. Video info costs **1 unit**, and nothing when it comes with a transcript. Failed requests are free.
+A transcript from captions costs **1 unit**. A video without captions is transcribed with AI for **1 unit per minute of audio**, at least 5 (a 9-minute video costs 9). Use `max_units` to cap what a request may cost. Video info costs **1 unit**, and nothing when it comes with a transcript. Listing a channel or playlist costs **1 unit per 100 videos** returned. Failed requests are free.
 
 | Plan | Price | Units per month |
 |---|---|---|

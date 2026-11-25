@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import { YTranscript, type Transcript, type Video, type QuotaInfo } from "ytranscript-api";
-import { renderTranscript, renderVideoInfo, explainError, KEY_URL } from "./format.js";
+import { YTranscript, type Transcript, type Video, type VideoList, type VideosOptions, type QuotaInfo } from "ytranscript-api";
+import { renderTranscript, renderVideoInfo, renderVideoList, explainError, KEY_URL } from "./format.js";
 
 export const VERSION = "0.4.0";
 
@@ -9,6 +9,7 @@ export const VERSION = "0.4.0";
 export interface TranscriptClient {
   transcript(video: string, opts: { lang?: string; metadata?: boolean; maxUnits?: number }): Promise<Transcript>;
   video(video: string): Promise<Video>;
+  videos(options: VideosOptions): Promise<VideoList>;
   lastQuota: QuotaInfo | null;
 }
 
@@ -113,6 +114,60 @@ export function createServer(opts: ServerOptions = {}): McpServer {
         return { content: [{ type: "text", text: renderVideoInfo(v, c.lastQuota) }] };
       } catch (err) {
         return { isError: true, content: [{ type: "text", text: explainError(err) }] };
+      }
+    },
+  );
+
+  server.registerTool(
+    "list_videos",
+    {
+      title: "List a YouTube channel's or playlist's videos",
+      description:
+        "List the videos of a YouTube channel (newest first) or a playlist (in playlist order), with " +
+        "each video's title, URL, publish date, length and views. Give either channel or playlist. Use " +
+        "published_after to get only recent videos, then call get_transcript on the ones you need. " +
+        "Costs 1 unit per started 100 videos. When the result says more videos are available, call again " +
+        "with the cursor it gives.",
+      inputSchema: {
+        channel: z.string().min(1).optional().describe("An @handle, a channel URL or a channel ID (UC...)"),
+        playlist: z.string().min(1).optional().describe("A playlist ID or a YouTube URL with list= (instead of channel)"),
+        content: z
+          .enum(["all", "videos"])
+          .optional()
+          .describe("Channels only. 'all' (default) includes Shorts and live streams; 'videos' returns regular videos only."),
+        published_after: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/, "Use a date in the form YYYY-MM-DD")
+          .optional()
+          .describe("Only videos published on or after this date, YYYY-MM-DD (UTC)."),
+        limit: z.number().int().min(1).max(500).optional().describe("How many videos to return, 1 to 500. Default 100."),
+        cursor: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("The cursor from a previous list_videos result, to get the next videos. It already carries the channel or playlist and the filters."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ channel, playlist, content, published_after, limit, cursor }) => {
+      if (!cursor && !channel === !playlist) {
+        return { isError: true, content: [{ type: "text", text: "Give either channel or playlist (not both), or a cursor from a previous result." }] };
+      }
+      try {
+        const c = getClient();
+        const options: VideosOptions = cursor
+          ? { cursor: cursor.trim() }
+          : {
+              ...(channel ? { channel: channel.trim() } : {}),
+              ...(playlist ? { playlist: playlist.trim() } : {}),
+              ...(content ? { content } : {}),
+              ...(published_after ? { publishedAfter: published_after } : {}),
+            };
+        if (limit !== undefined) options.limit = limit;
+        const list = await c.videos(options);
+        return { content: [{ type: "text", text: renderVideoList(list, c.lastQuota) }] };
+      } catch (err) {
+        return { isError: true, content: [{ type: "text", text: explainError(err, "list") }] };
       }
     },
   );
